@@ -1,0 +1,6 @@
+{
+  "name": "Coal Generator",
+  "power_output": 25,
+  "fuel_type": "coal",
+  "pollution": 5
+}

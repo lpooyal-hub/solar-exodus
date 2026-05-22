@@ -1,0 +1,47 @@
+[gd_scene format=3]
+
+[ext_resource type="PackedScene" path="res://scenes/player/player.tscn" id=1]
+[ext_resource type="PackedScene" path="res://scenes/world/resource_node.tscn" id=2]
+[ext_resource type="PackedScene" path="res://scenes/ui/hud.tscn" id=3]
+[ext_resource type="PackedScene" path="res://scenes/buildings/generator.tscn" id=6]
+[ext_resource type="PackedScene" path="res://scenes/buildings/rocket.tscn" id=9]
+[ext_resource type="Script" path="res://scripts/systems/camera_follow.gd" id=4]
+[ext_resource type="Script" path="res://scripts/systems/world.gd" id=5]
+[ext_resource type="Script" path="res://scripts/systems/power_system.gd" id=7]
+[ext_resource type="Script" path="res://scripts/systems/pollution_system.gd" id=8]
+
+[node name="World" type="Node2D"]
+script = ExtResource(5)
+
+[node name="Resources" type="Node2D" parent="."]
+
+[node name="HUD" parent="."]
+instance = ExtResource(3)
+
+[node name="Player" parent="."]
+instance = ExtResource(1)
+position = Vector2(144, 144)
+
+[node name="PowerSystem" type="Node" parent="."]
+script = ExtResource(7)
+
+[node name="PollutionSystem" type="Node" parent="."]
+script = ExtResource(8)
+
+[node name="CoalGenerator" parent="."]
+instance = ExtResource(6)
+position = Vector2(200, 96)
+power_system_path = NodePath("../PowerSystem")
+pollution_system_path = NodePath("../PollutionSystem")
+starting_coal = 0
+
+[node name="Rocket" parent="."]
+instance = ExtResource(9)
+position = Vector2(320, 120)
+
+[node name="Camera2D" type="Camera2D" parent="Player"]
+script = ExtResource(4)
+current = true
+smoothing_enabled = true
+smoothing_speed = 6.0
+target_path = NodePath("..")

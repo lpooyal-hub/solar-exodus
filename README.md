@@ -1,0 +1,57 @@
+# Solar Exodus
+
+Solar Exodus는 제한된 자원으로 황폐해진 행성에서 산업 기반을 구축하고, 초기 로켓을 발사해 인근 행성으로 진출한 뒤 더 강력한 로켓을 만들어 태양계를 탈출하는 2D 산업 자동화 생존 전략 게임입니다.
+
+## 게임 개요
+
+- 장르: 2D 산업 자동화 + 생존 전략
+- 목표: 자원 관리, 전력 생산, 자동화, 연구, 로켓 개발
+- 최종 승리: 초기 행성에서 출발해 인근 행성을 개척하고, 태양계를 탈출
+
+## 현재 구현 상태
+
+- 플레이어 이동 및 카메라 시스템
+- 타일 기반 월드 생성
+- 자원 노드 생성 및 수집
+- HUD 상태 표시
+- 전력 시스템 및 발전기 연동
+- 오염 시스템 기본 구현
+- 로켓 제작, 발사, 업그레이드, 탈출 플로우
+- 연료 및 로켓 부품 자원 관리
+
+## 핵심 시스템
+
+- 자원: `coal`, `iron`, `copper`, `fuel`, `rocket_parts`
+- 전력: `PowerSystem`
+- 오염: `PollutionSystem`
+- 로켓: 제작 / 발사 / 업그레이드 / 탈출
+
+## 기본 조작
+
+- 이동: 화살표 / WASD
+- B: 로켓 제작
+- L: 초기 로켓 발사
+- U: 로켓 업그레이드
+- E: 태양계 탈출
+
+## GitHub 푸시 명령
+
+```bash
+cd /home/ubuntu/project_42222
+git init
+git add .
+git commit -m "Initial Solar Exodus prototype"
+git remote add origin https://github.com/lpooyal-hub/solar-exodus.git
+git branch -M main
+git push -u origin main
+```
+
+> 이미 Git 리포지토리가 초기화되어 있다면 `git init`을 생략하고,
+> 이미 origin이 있다면 `git remote set-url origin https://github.com/lpooyal-hub/solar-exodus.git`을 사용하세요.
+
+## 향후 작업
+
+- 주변 행성 자원 시스템 구현
+- 연료 기반 우주 이동/재보급 메커니즘 추가
+- 콘텐츠 확장 및 밸런싱
+- 게임 플레이 테스트

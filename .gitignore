@@ -1,0 +1,19 @@
+# Godot editor / build artifacts
+.import/
+.export/
+.export_presets.cfg
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE settings
+.vscode/
+*.sublime-project
+*.sublime-workspace
+
+# Internal notes and temporary logs
+history.md
+
+# Ignore generated or temporary markdown notes specific to this session
+*.session.md

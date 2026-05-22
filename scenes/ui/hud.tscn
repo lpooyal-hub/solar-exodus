@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+
+[node name="HUD" type="CanvasLayer"]
+script = ExtResource("1_hud")
+
+[node name="Panel" type="Panel" parent="HUD"]
+rect_position = Vector2(12, 12)
+rect_min_size = Vector2(260, 140)
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
+custom_constants/separation = 6.0
+
+[node name="Title" type="Label" parent="Panel/VBoxContainer"]
+text = "Resources"
+
+[node name="CoalLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Coal: 0"
+
+[node name="IronLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Iron: 0"
+
+[node name="CopperLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Copper: 0"
+
+[node name="FuelLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Fuel: 0"
+
+[node name="PartsLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Parts: 0"
+
+[node name="PowerLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Power: 0"
+
+[node name="PollutionLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Pollution: 0%"
+
+[node name="RocketLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Rocket: not built"
+
+[node name="MessageLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Press B to build a rocket."
+
+[node name="ControlsLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "B: Build, L: Launch, U: Upgrade, E: Escape"

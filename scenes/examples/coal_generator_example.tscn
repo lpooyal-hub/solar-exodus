@@ -1,0 +1,25 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/examples/coal_generator_example.gd" id="1_example"]
+[ext_resource type="PackedScene" path="res://scenes/buildings/generator.tscn" id="2_generator"]
+[ext_resource type="Script" path="res://scripts/systems/power_system.gd" id="3_power"]
+
+[node name="CoalGeneratorExample" type="Node2D"]
+script = ExtResource("1_example")
+
+[node name="PowerSystem" type="Node" parent="."]
+script = ExtResource("3_power")
+
+[node name="CoalGenerator" parent="." instance=ExtResource("2_generator")]
+position = Vector2(160, 120)
+power_system_path = NodePath("../PowerSystem")
+starting_coal = 2
+power_per_cycle = 25
+cycle_time = 1.0
+
+[node name="StatusLabel" type="Label" parent="."]
+offset_left = 24.0
+offset_top = 24.0
+offset_right = 420.0
+offset_bottom = 56.0
+text = "Coal generator example"
