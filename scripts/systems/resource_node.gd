@@ -28,6 +28,19 @@ func set_amount(value: int) -> void:
 	amount = max(value, 1)
 	update()
 
+func get_type() -> String:
+	return resource_type
+
+func get_amount() -> int:
+	return amount
+
+func collect(collected_amount: int) -> void:
+	amount -= collected_amount
+	if amount <= 0:
+		queue_free()
+	else:
+		update()
+
 func _on_body_entered(body: Node) -> void:
 	if body is CharacterBody2D:
 		emit_signal("collected", resource_type, amount)

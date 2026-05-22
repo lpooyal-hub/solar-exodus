@@ -9,13 +9,18 @@ extends CanvasLayer
 @onready var pollution_label: Label = $Panel/VBoxContainer/PollutionLabel
 @onready var rocket_label: Label = $Panel/VBoxContainer/RocketLabel
 @onready var message_label: Label = $Panel/VBoxContainer/MessageLabel
+@onready var objective_label: Label = $Panel/VBoxContainer/ObjectiveLabel
+
+var last_message: String = ""
+var last_building_info: String = ""
 
 func _ready() -> void:
 	set_all_resources({"coal": 0, "iron": 0, "copper": 0, "fuel": 0, "rocket_parts": 0})
 	set_power(0)
 	set_pollution(0.0)
 	set_rocket_status("Rocket: not built")
-	set_message("Press B to build a rocket.")
+	set_objective("Gather rocket parts and fuel to build your first booster.")
+	set_message("Press H for controls and objective hints.")
 
 func set_all_resources(resources: Dictionary) -> void:
 	coal_label.text = "Coal: %d" % resources.get("coal", 0)
@@ -41,5 +46,16 @@ func set_pollution(value: float) -> void:
 func set_rocket_status(status: String) -> void:
 	rocket_label.text = status
 
+func set_objective(text: String) -> void:
+	objective_label.text = "Objective: %s" % text
+
 func set_message(text: String) -> void:
+	last_message = text
 	message_label.text = text
+
+func set_building_info(info: String) -> void:
+	last_building_info = info
+	if info != "":
+		message_label.text = "Building: %s" % info
+	else:
+		message_label.text = last_message
