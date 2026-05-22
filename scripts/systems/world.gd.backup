@@ -63,19 +63,21 @@ func _input(event: InputEvent) -> void:
 				attempt_upgrade_rocket()
 			KEY_E:
 				attempt_escape()
+			# Building placement keys
 			KEY_1:
-				select_building_type(0)
+				select_building_type(0)  # Miner
 			KEY_2:
-				select_building_type(1)
+				select_building_type(1)  # Furnace
 			KEY_3:
-				select_building_type(2)
+				select_building_type(2)  # Generator
 			KEY_4:
-				select_building_type(3)
+				select_building_type(3)  # Storage
 			KEY_ESCAPE:
 				placement_mode = false
 				selected_building_type = -1
 				send_message("Placement cancelled.")
 	
+	# Mouse click to place building
 	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and placement_mode:
 		var mouse_pos = get_local_mouse_position()
 		var grid_x = int(mouse_pos.x / tile_size)
@@ -90,12 +92,16 @@ func _process(_delta: float) -> void:
 			resource_inventory["coal"] = max(coal_available - 1, 0)
 			update_hud()
 
+	# Process all buildings
 	if building_manager != null and building_manager.has_method("process_buildings"):
 		building_manager.process_buildings(resource_inventory, power_system, pollution_system, resources_root)
 
 	update_hud()
 
-func select_building_type(building_type: int) -> void:
+func send_message(text: String) -> void:
+	last_message = text
+
+def select_building_type(building_type: int) -> void:
 	if building_manager == null:
 		send_message("Building system not available.")
 		return
@@ -124,9 +130,6 @@ func attempt_place_building(building_type: int, grid_pos: Vector2) -> void:
 		send_message("Failed to place building.")
 
 func send_message(text: String) -> void:
-	last_message = text
-
-func attempt_build_rocket() -> void:
 	if rocket_node == null:
 		send_message("Rocket system unavailable.")
 		return
@@ -215,6 +218,9 @@ func _on_resource_collected(resource_type: String, amount: int) -> void:
 	resource_inventory[resource_type] = resource_inventory.get(resource_type, 0) + amount
 	update_hud()
 
+func send_message(text: String) -> void:
+	last_message = text
+
 func update_hud() -> void:
 	if hud == null:
 		return
@@ -266,6 +272,6 @@ func get_current_objective() -> String:
 func toggle_help() -> void:
 	show_help = not show_help
 	if show_help:
-		send_message("Controls: H help, B build, L launch, U upgrade, E escape. 1-4 place buildings.")
+		send_message("Controls: H help, B build, L launch, U upgrade, E escape. Collect fuel and parts.")
 	else:
 		send_message("Help hidden. Keep collecting resources.")
