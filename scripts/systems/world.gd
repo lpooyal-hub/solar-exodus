@@ -72,15 +72,29 @@ func _input(event: InputEvent) -> void:
 			KEY_4:
 				select_building_type(3)
 			KEY_ESCAPE:
-				placement_mode = false
-				selected_building_type = -1
-				send_message("Placement cancelled.")
+				if placement_mode:
+					placement_mode = false
+					selected_building_type = -1
+					send_message("Placement cancelled.")
+				else:
+					if building_manager != null:
+						building_manager.deselect_building()
+						send_message("Building deselected.")
 	
-	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT and placement_mode:
+	# Left click: place building or select building
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
 		var mouse_pos = get_local_mouse_position()
-		var grid_x = int(mouse_pos.x / tile_size)
-		var grid_y = int(mouse_pos.y / tile_size)
-		attempt_place_building(selected_building_type, Vector2(grid_x, grid_y))
+		if placement_mode:
+			var grid_x = int(mouse_pos.x / tile_size)
+			var grid_y = int(mouse_pos.y / tile_size)
+			attempt_place_building(selected_building_type, Vector2(grid_x, grid_y))
+		else:
+			# Try to select building
+			if building_manager != null and building_manager.has_method("get_building_at_position"):
+				var building = building_manager.get_building_at_position(mouse_pos)
+				if building != null:
+					building_manager.select_building(building)
+					send_message(building_manager.get_selected_building_info())
 
 func _process(_delta: float) -> void:
 	if generator != null and generator.has_method("get_coal_amount") and generator.get_coal_amount() <= 0:
@@ -230,6 +244,8 @@ func update_hud() -> void:
 		hud.set_objective(get_current_objective())
 	if hud.has_method("set_message"):
 		hud.set_message(last_message)
+	if hud.has_method("set_building_info") and building_manager != null:
+		hud.set_building_info(building_manager.get_selected_building_info())
 
 func _draw() -> void:
 	for y in range(map_height):

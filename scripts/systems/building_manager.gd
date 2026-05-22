@@ -4,6 +4,7 @@ const GRID_SIZE: int = 48
 
 var buildings: Array = []
 var world: Node2D = null
+var selected_building = null
 
 # Building types
 enum BuildingType {
@@ -13,11 +14,26 @@ enum BuildingType {
 	STORAGE
 }
 
+# Building states
+enum BuildingState {
+	IDLE,
+	WORKING,
+	STARVING,
+	ERROR
+}
+
 var building_costs: Dictionary = {
 	BuildingType.MINER: {"coal": 5, "iron": 3},
 	BuildingType.FUEL_FURNACE: {"coal": 3, "iron": 2},
 	BuildingType.GENERATOR: {"coal": 2, "iron": 4},
 	BuildingType.STORAGE: {"coal": 1, "iron": 5}
+}
+
+var state_colors: Dictionary = {
+	BuildingState.IDLE: Color(0.5, 0.5, 0.5),
+	BuildingState.WORKING: Color(0.0, 1.0, 0.0),
+	BuildingState.STARVING: Color(1.0, 1.0, 0.0),
+	BuildingState.ERROR: Color(1.0, 0.0, 0.0)
 }
 
 var building_scripts: Dictionary = {
@@ -32,79 +48,76 @@ class Building:
 	var position: Vector2
 	var node: Node2D
 	var cost: Dictionary
-	
+	var state: int = 0  # IDLE
+	var sprite: Polygon2D = null
+	var label: Label = null
+	var state_indicator: Node2D = null
+
 	func _init(p_type: int, p_position: Vector2, p_cost: Dictionary):
 		type = p_type
 		position = p_position
 		cost = p_cost.duplicate()
 		node = null
+		state = 0
 
 func _ready() -> void:
 	world = get_parent()
 
 func can_place_building(building_type: int, grid_pos: Vector2, inventory: Dictionary) -> bool:
-	# Check if position is valid
 	if grid_pos.x < 0 or grid_pos.y < 0 or grid_pos.x >= 28 or grid_pos.y >= 18:
 		return false
-	
-	# Check if position is occupied
+
 	for building in buildings:
 		if building.position == grid_pos:
 			return false
-	
-	# Check if inventory has enough resources
+
 	var cost = building_costs[building_type]
 	for resource in cost:
 		if inventory.get(resource, 0) < cost[resource]:
 			return false
-	
+
 	return true
 
 func place_building(building_type: int, grid_pos: Vector2, inventory: Dictionary) -> Building:
 	if not can_place_building(building_type, grid_pos, inventory):
 		return null
-	
-	# Deduct cost from inventory
+
 	var cost = building_costs[building_type]
 	for resource in cost:
 		inventory[resource] = max(0, inventory.get(resource, 0) - cost[resource])
-	
-	# Create building
+
 	var building = Building.new(building_type, grid_pos, cost)
-	
-	# Create visual node
+
 	var node = Node2D.new()
 	node.name = "Building_" + str(building_type)
 	node.position = grid_pos * GRID_SIZE + Vector2(GRID_SIZE / 2, GRID_SIZE / 2)
-	
-	# Add visual representation
+
+	# Main building sprite
 	var sprite = Polygon2D.new()
 	sprite.polygon = PackedVector2Array([
 		Vector2(-16, -16), Vector2(16, -16), Vector2(16, 16), Vector2(-16, 16)
 	])
-	
-	match building_type:
-		BuildingType.MINER:
-			sprite.color = Color(0.5, 0.5, 0.5)  # Gray
-		BuildingType.FUEL_FURNACE:
-			sprite.color = Color(1.0, 0.5, 0.0)  # Orange
-		BuildingType.GENERATOR:
-			sprite.color = Color(1.0, 0.8, 0.0)  # Yellow
-		BuildingType.STORAGE:
-			sprite.color = Color(0.5, 0.5, 1.0)  # Blue
-	
+	sprite.color = state_colors[BuildingState.IDLE]
 	node.add_child(sprite)
-	
-	# Add label
+	building.sprite = sprite
+
+	# Label
 	var label = Label.new()
 	label.text = get_building_name(building_type)
 	label.add_theme_font_size_override("font_size", 8)
 	label.position = Vector2(-16, -20)
 	node.add_child(label)
-	
+	building.label = label
+
+	# State indicator (progress dot)
+	var indicator = Node2D.new()
+	var indicator_circle = CircleShape2D.new()
+	node.add_child(indicator)
+	building.state_indicator = indicator
+
 	building.node = node
 	add_child(node)
-	
+
 	buildings.append(building)
 	return building
 
@@ -143,32 +156,59 @@ func get_building_info(building_type: int) -> String:
 		cost_str += str(cost[resource]) + " " + resource
 	return "%s (Cost: %s)" % [name, cost_str]
 
+func get_state_name(state: int) -> String:
+	match state:
+		BuildingState.IDLE:
+			return "Idle"
+		BuildingState.WORKING:
+			return "Working"
+		BuildingState.STARVING:
+			return "Starving"
+		BuildingState.ERROR:
+			return "Error"
+		_:
+			return "Unknown"
+
 func process_buildings(inventory: Dictionary, power_system: Node, pollution_system: Node, resources_root: Node2D) -> void:
 	# Miners collect resources from the map
 	for building in get_buildings_by_type(BuildingType.MINER):
-		if building.node != null:
-			var collected = collect_nearby_resources(building.node.position, resources_root)
+		var collected = collect_nearby_resources(building.node.position, resources_root)
+		if collected.size() > 0:
+			building.state = BuildingState.WORKING
 			for resource in collected:
 				inventory[resource] = inventory.get(resource, 0) + collected[resource]
-	
+		else:
+			building.state = BuildingState.STARVING
+
 	# Fuel furnaces convert coal to fuel
 	for building in get_buildings_by_type(BuildingType.FUEL_FURNACE):
 		if inventory.get("coal", 0) >= 2:
 			inventory["coal"] -= 2
 			inventory["fuel"] = inventory.get("fuel", 0) + 1
-	
+			building.state = BuildingState.WORKING
+		else:
+			building.state = BuildingState.STARVING
+
 	# Generators convert fuel to power
 	for building in get_buildings_by_type(BuildingType.GENERATOR):
-		if inventory.get("fuel", 0) >= 1 and power_system != null:
+		if power_system != null and inventory.get("fuel", 0) >= 1:
 			inventory["fuel"] -= 1
 			power_system.add_power(25)
 			if pollution_system != null:
 				pollution_system.add_pollution(2.0)
+			building.state = BuildingState.WORKING
+		else:
+			building.state = BuildingState.STARVING
+
+	# Update visuals for all buildings
+	for building in buildings:
+		if building.sprite != null:
+			building.sprite.color = state_colors[building.state]
 
 func collect_nearby_resources(position: Vector2, resources_root: Node2D) -> Dictionary:
 	var collected: Dictionary = {}
 	var collect_range: float = 100.0
-	
+
 	for resource_node in resources_root.get_children():
 		if position.distance_to(resource_node.position) < collect_range:
 			if resource_node.has_method("get_type") and resource_node.has_method("get_amount"):
@@ -177,5 +217,34 @@ func collect_nearby_resources(position: Vector2, resources_root: Node2D) -> Dict
 				if amount > 0:
 					collected[resource_type] = collected.get(resource_type, 0) + amount
 					resource_node.collect(amount)
-	
+
 	return collected
+
+func get_building_at_position(world_pos: Vector2) -> Building:
+	for building in buildings:
+		if building.node != null:
+			var dist = building.node.position.distance_to(world_pos)
+			if dist < GRID_SIZE:
+				return building
+	return null
+
+func select_building(building: Building) -> void:
+	selected_building = building
+	if building != null and building.node != null:
+		building.node.modulate = Color(1.2, 1.2, 1.2)
+	# Deselect others
+	for b in buildings:
+		if b != building and b.node != null:
+			b.node.modulate = Color(1.0, 1.0, 1.0)
+
+func deselect_building() -> void:
+	if selected_building != null and selected_building.node != null:
+		selected_building.node.modulate = Color(1.0, 1.0, 1.0)
+	selected_building = null
+
+func get_selected_building_info() -> String:
+	if selected_building == null:
+		return ""
+	var name = get_building_name(selected_building.type)
+	var state = get_state_name(selected_building.state)
+	return "%s: %s" % [name, state]
