@@ -40,7 +40,10 @@ text = "Pollution: 0%"
 text = "Rocket: not built"
 
 [node name="MessageLabel" type="Label" parent="Panel/VBoxContainer"]
-text = "Press B to build a rocket."
+text = "Press H for controls and objective hints."
+
+[node name="ObjectiveLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Objective: Gather rocket parts and fuel."
 
 [node name="ControlsLabel" type="Label" parent="Panel/VBoxContainer"]
-text = "B: Build, L: Launch, U: Upgrade, E: Escape"
+text = "H: Help | B: Build | L: Launch | U: Upgrade | E: Escape"

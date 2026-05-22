@@ -49,6 +49,15 @@ git push -u origin main
 > 이미 Git 리포지토리가 초기화되어 있다면 `git init`을 생략하고,
 > 이미 origin이 있다면 `git remote set-url origin https://github.com/lpooyal-hub/solar-exodus.git`을 사용하세요.
 
+### dev 브랜치 전략
+
+초기 커밋은 `main`으로 했지만, 이후 개발은 `dev` 브랜치를 만들어서 진행하는 것이 좋습니다.
+
+```bash
+git checkout -b dev
+git push -u origin dev
+```
+
 ## 향후 작업
 
 - 주변 행성 자원 시스템 구현

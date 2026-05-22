@@ -25,7 +25,8 @@ var resource_inventory: Dictionary = {"coal": 0, "iron": 0, "copper": 0, "fuel":
 @onready var generator: Node = $CoalGenerator
 @onready var rocket_node: Node = $Rocket
 var resource_scene: PackedScene = preload("res://scenes/world/resource_node.tscn")
-var last_message: String = "Press B to build a rocket."
+var last_message: String = "Press H for help."
+var show_help: bool = false
 
 func _ready() -> void:
 	randomize()
@@ -39,6 +40,8 @@ func _ready() -> void:
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
+			KEY_H:
+				toggle_help()
 			KEY_B:
 				attempt_build_rocket()
 			KEY_L:
@@ -66,27 +69,27 @@ func attempt_build_rocket() -> void:
 		send_message("Rocket system unavailable.")
 		return
 	if rocket_node.has_method("build_initial") and rocket_node.build_initial(resource_inventory):
-		send_message("Initial rocket built. Press L to launch.")
+		send_message("Initial rocket built. Press L to launch when enough fuel is loaded.")
 	else:
-		send_message("Not enough resources to build the rocket.")
+		send_message("Not enough parts or fuel to build the rocket.")
 
 func attempt_launch_rocket() -> void:
 	if rocket_node == null:
 		send_message("Rocket system unavailable.")
 		return
 	if rocket_node.has_method("launch_initial") and rocket_node.launch_initial(resource_inventory):
-		send_message("Nearby planet reached. Collect more resources and press U to upgrade.")
+		send_message("Nearby planet reached. Gather more resources, then press U to upgrade.")
 	else:
-		send_message("Rocket must be built first before launching, or fuel is too low.")
+		send_message("Launch failed. Build rocket first and ensure enough fuel.")
 
 func attempt_upgrade_rocket() -> void:
 	if rocket_node == null:
 		send_message("Rocket system unavailable.")
 		return
 	if rocket_node.has_method("upgrade_to_escape") and rocket_node.upgrade_to_escape(resource_inventory):
-		send_message("Rocket upgraded. Press E to escape the solar system.")
+		send_message("Rocket upgraded. Press E to escape the solar system when fuel is ready.")
 	else:
-		send_message("Cannot upgrade rocket yet. Reach nearby planet and check resources.")
+		send_message("Upgrade failed. Need more parts or a completed initial launch.")
 
 func attempt_escape() -> void:
 	if rocket_node == null:
@@ -95,7 +98,7 @@ func attempt_escape() -> void:
 	if rocket_node.has_method("escape_solar_system") and rocket_node.escape_solar_system(resource_inventory):
 		send_message("Victory! Solar system escaped.")
 	else:
-		send_message("Rocket must be upgraded before escaping, or fuel is too low.")
+		send_message("Escape failed. Upgrade rocket and ensure enough fuel.")
 
 func generate_tiles() -> void:
 	tiles.clear()
@@ -164,6 +167,8 @@ func update_hud() -> void:
 		hud.set_pollution(pollution_system.pollution)
 	if hud.has_method("set_rocket_status") and rocket_node != null:
 		hud.set_rocket_status(rocket_node.get_status_text())
+	if hud.has_method("set_objective"):
+		hud.set_objective(get_current_objective())
 	if hud.has_method("set_message"):
 		hud.set_message(last_message)
 
@@ -180,3 +185,28 @@ func _draw() -> void:
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAW:
 		pass
+
+func get_current_objective() -> String:
+	if rocket_node == null:
+		return "Find rocket components."
+	var stage := rocket_node.stage if rocket_node.has_property("stage") else 0
+	match stage:
+		0:
+			return "Collect rocket parts and fuel to build your first rocket."
+		1:
+			return "Load fuel and launch to reach a nearby planet."
+		2:
+			return "Gather advanced resources and parts for the escape upgrade."
+		3:
+			return "Load escape fuel and break out of the solar system."
+		4:
+			return "Solar system escaped!" 
+		_:
+			return "Explore, collect resources, and prepare the rocket."
+
+func toggle_help() -> void:
+	show_help = not show_help
+	if show_help:
+		send_message("Controls: H help, B build, L launch, U upgrade, E escape. Collect fuel and parts.")
+	else:
+		send_message("Help hidden. Keep collecting resources.")
