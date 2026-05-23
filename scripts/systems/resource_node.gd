@@ -15,18 +15,20 @@ const RESOURCE_COLORS := {
 }
 
 func _ready() -> void:
-	if $Area2D/CollisionShape2D.shape is CircleShape2D:
-		$Area2D/CollisionShape2D.shape.radius = radius
+	var collision_shape = $Area2D/CollisionShape2D
+	var shape = CircleShape2D.new()
+	shape.radius = radius
+	collision_shape.shape = shape
 	$Area2D.connect("body_entered", Callable(self, "_on_body_entered"))
-	update()
+	_request_redraw()
 
 func set_resource_type(value: String) -> void:
 	resource_type = value
-	update()
+	_request_redraw()
 
 func set_amount(value: int) -> void:
 	amount = max(value, 1)
-	update()
+	_request_redraw()
 
 func get_type() -> String:
 	return resource_type
@@ -39,7 +41,7 @@ func collect(collected_amount: int) -> void:
 	if amount <= 0:
 		queue_free()
 	else:
-		update()
+		_request_redraw()
 
 func _on_body_entered(body: Node) -> void:
 	if body is CharacterBody2D:
@@ -50,4 +52,10 @@ func _draw() -> void:
 	var fill = RESOURCE_COLORS.get(resource_type, Color(0.5, 0.5, 0.5))
 	draw_circle(Vector2.ZERO, radius, fill)
 	draw_circle(Vector2.ZERO, radius * 0.8, Color(1, 1, 1, 0.1))
-	draw_string(FontServer.get_default_font(), Vector2(-radius * 0.4, 4), str(amount), Color(1, 1, 1, 0.85))
+	# draw_string removed for compatibility; avoid font-related errors during redraw
+
+func _request_redraw() -> void:
+	if has_method("update"):
+		call_deferred("update")
+	elif has_method("queue_redraw"):
+		call_deferred("queue_redraw")
