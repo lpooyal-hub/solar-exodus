@@ -48,7 +48,7 @@ func _ready() -> void:
 	add_child(building_manager)
 	
 	update_hud()
-	update()
+	_request_redraw()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -98,7 +98,7 @@ func _input(event: InputEvent) -> void:
 
 func _process(_delta: float) -> void:
 	if generator != null and generator.has_method("get_coal_amount") and generator.get_coal_amount() <= 0:
-		var coal_available := resource_inventory.get("coal", 0)
+		var coal_available: int = int(resource_inventory.get("coal", 0))
 		if coal_available > 0:
 			generator.add_coal(1)
 			resource_inventory["coal"] = max(coal_available - 1, 0)
@@ -250,9 +250,9 @@ func update_hud() -> void:
 func _draw() -> void:
 	for y in range(map_height):
 		for x in range(map_width):
-			var index := x + y * map_width
-			var tile_type := tiles[index]
-			var tile_color := TILE_COLORS[tile_type]
+			var index: int = x + y * map_width
+			var tile_type: int = int(tiles[index])
+			var tile_color: Color = TILE_COLORS[tile_type]
 			draw_rect(Rect2(x * tile_size, y * tile_size, tile_size, tile_size), tile_color, true)
 			if (x + y) % 2 == 0:
 				draw_rect(Rect2(x * tile_size, y * tile_size, tile_size, tile_size), Color(1, 1, 1, 0.04), false, 1.0)
@@ -261,10 +261,18 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAW:
 		pass
 
+func _request_redraw() -> void:
+	if has_method("update"):
+		call_deferred("update")
+	elif has_method("queue_redraw"):
+		call_deferred("queue_redraw")
+
 func get_current_objective() -> String:
 	if rocket_node == null:
 		return "Find rocket components."
-	var stage := rocket_node.stage if rocket_node.has_property("stage") else 0
+	var stage: int = 0
+	if rocket_node.has_property("stage"):
+		stage = int(rocket_node.stage)
 	match stage:
 		0:
 			return "Collect rocket parts and fuel to build your first rocket."
@@ -275,8 +283,9 @@ func get_current_objective() -> String:
 		3:
 			return "Load escape fuel and break out of the solar system."
 		4:
-			return "Solar system escaped!" 
+			return "Solar system escaped!"
 		_:
+			return "Unknown objective."
 			return "Explore, collect resources, and prepare the rocket."
 
 func toggle_help() -> void:
