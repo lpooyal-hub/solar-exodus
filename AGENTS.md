@@ -1,4 +1,18 @@
 # AGENTS.md
+# Godot Coding Rules
+
+- Use Godot 4.x only.
+- Use GDScript 2.0 syntax.
+- Never use Godot 3.x APIs.
+- Use queue_redraw() instead of update().
+- Use @onready instead of old onready syntax.
+- Use CharacterBody2D, not KinematicBody2D.
+- Use await instead of yield.
+- Do not assume node paths.
+- Before writing code, describe required scene tree.
+- Prefer small, testable scripts.
+- After writing code, explain where to attach the script.
+
 
 ## Project Overview
 

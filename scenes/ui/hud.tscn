@@ -1,16 +1,19 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/ui/hud.gd" id="1_hud"]
+[ext_resource type="Script" path="res://scripts/ui/minimap.gd" id="2_minimap"]
+[ext_resource type="PackedScene" path="res://scenes/ui/inventory.tscn" id="3_inventory"]
 
 [node name="HUD" type="CanvasLayer"]
 script = ExtResource("1_hud")
 
-[node name="Panel" type="Panel" parent="HUD"]
-rect_position = Vector2(12, 12)
-rect_min_size = Vector2(260, 140)
+[node name="Panel" type="Panel" parent="."]
+position = Vector2(12, 12)
+custom_minimum_size = Vector2(280, 360)
+size = Vector2(280, 360)
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Panel"]
-custom_constants/separation = 6.0
+theme_override_constants/separation = 6
 
 [node name="Title" type="Label" parent="Panel/VBoxContainer"]
 text = "Resources"
@@ -46,4 +49,27 @@ text = "Press H for controls and objective hints."
 text = "Objective: Gather rocket parts and fuel."
 
 [node name="ControlsLabel" type="Label" parent="Panel/VBoxContainer"]
-text = "H: Help | B: Build | L: Launch | U: Upgrade | E: Escape"
+text = "WASD/Arrows: Move | H: Help | B/L/U/E: Rocket | 1-4: Build"
+autowrap_mode = 2
+
+[node name="BuildMenuLabel" type="Label" parent="Panel/VBoxContainer"]
+text = ""
+autowrap_mode = 2
+
+[node name="LegendLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Legend: Blue = Player, Brown = Coal, Gray = Iron, Orange = Copper, Light Blue = Fuel"
+autowrap_mode = 2
+
+[node name="InputStateLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Input: None"
+autowrap_mode = 2
+
+[node name="VelocityLabel" type="Label" parent="Panel/VBoxContainer"]
+text = "Speed: 0"
+autowrap_mode = 2
+
+[node name="MinimapPanel" type="Panel" parent="Panel/VBoxContainer"]
+script = ExtResource("2_minimap")
+custom_minimum_size = Vector2(240, 120)
+
+[node name="Inventory" parent="." instance=ExtResource("3_inventory")]

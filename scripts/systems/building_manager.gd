@@ -1,6 +1,14 @@
 extends Node2D
 
 const GRID_SIZE: int = 48
+const MINER_CYCLE_TIME: float = 3.0
+const FURNACE_CYCLE_TIME: float = 4.0
+const GENERATOR_CYCLE_TIME: float = 2.0
+const MINER_COLLECT_RANGE: float = 100.0
+const FURNACE_COAL_COST: int = 2
+const GENERATOR_FUEL_COST: int = 1
+const GENERATOR_POWER_OUTPUT: int = 25
+const GENERATOR_POLLUTION_OUTPUT: float = 2.0
 
 var buildings: Array = []
 var world: Node2D = null
@@ -52,6 +60,7 @@ class Building:
 	var sprite: Polygon2D = null
 	var label: Label = null
 	var state_indicator: Node2D = null
+	var cycle_progress: float = 0.0
 
 	func _init(p_type: int, p_position: Vector2, p_cost: Dictionary):
 		type = p_type
@@ -64,6 +73,9 @@ func _ready() -> void:
 	world = get_parent()
 
 func can_place_building(building_type: int, grid_pos: Vector2, inventory: Dictionary) -> bool:
+	if not building_costs.has(building_type):
+		return false
+
 	if grid_pos.x < 0 or grid_pos.y < 0 or grid_pos.x >= 28 or grid_pos.y >= 18:
 		return false
 
@@ -147,6 +159,8 @@ func get_building_name(building_type: int) -> String:
 			return "Unknown"
 
 func get_building_info(building_type: int) -> String:
+	if not building_costs.has(building_type):
+		return "Unknown"
 	var name = get_building_name(building_type)
 	var cost = building_costs[building_type]
 	var cost_str = ""
@@ -155,6 +169,32 @@ func get_building_info(building_type: int) -> String:
 			cost_str += ", "
 		cost_str += str(cost[resource]) + " " + resource
 	return "%s (Cost: %s)" % [name, cost_str]
+
+func get_build_menu_text() -> String:
+	var lines: Array[String] = []
+	for building_type in BuildingType.values():
+		lines.append("%d: %s" % [int(building_type) + 1, get_building_info(building_type)])
+	return "\n".join(lines)
+
+func get_place_failure_reason(building_type: int, grid_pos: Vector2, inventory: Dictionary) -> String:
+	if not building_costs.has(building_type):
+		return "Unknown building."
+	if grid_pos.x < 0 or grid_pos.y < 0 or grid_pos.x >= 28 or grid_pos.y >= 18:
+		return "Outside buildable area."
+	for building in buildings:
+		if building.position == grid_pos:
+			return "Tile already occupied."
+
+	var missing: Array[String] = []
+	var cost = building_costs[building_type]
+	for resource in cost:
+		var needed: int = int(cost[resource])
+		var owned: int = int(inventory.get(resource, 0))
+		if owned < needed:
+			missing.append("%s %d/%d" % [resource, owned, needed])
+	if missing.size() > 0:
+		return "Missing " + ", ".join(missing) + "."
+	return "Cannot place building there."
 
 func get_state_name(state: int) -> String:
 	match state:
@@ -169,9 +209,14 @@ func get_state_name(state: int) -> String:
 		_:
 			return "Unknown"
 
-func process_buildings(inventory: Dictionary, power_system: Node, pollution_system: Node, resources_root: Node2D) -> void:
+func process_buildings(delta: float, inventory: Dictionary, power_system: Node, pollution_system: Node, resources_root: Node2D) -> void:
 	# Miners collect resources from the map
 	for building in get_buildings_by_type(BuildingType.MINER):
+		building.cycle_progress += delta
+		if building.cycle_progress < MINER_CYCLE_TIME:
+			continue
+		building.cycle_progress = 0.0
+
 		var collected = collect_nearby_resources(building.node.position, resources_root)
 		if collected.size() > 0:
 			building.state = BuildingState.WORKING
@@ -182,8 +227,13 @@ func process_buildings(inventory: Dictionary, power_system: Node, pollution_syst
 
 	# Fuel furnaces convert coal to fuel
 	for building in get_buildings_by_type(BuildingType.FUEL_FURNACE):
-		if inventory.get("coal", 0) >= 2:
-			inventory["coal"] -= 2
+		building.cycle_progress += delta
+		if building.cycle_progress < FURNACE_CYCLE_TIME:
+			continue
+		building.cycle_progress = 0.0
+
+		if inventory.get("coal", 0) >= FURNACE_COAL_COST:
+			inventory["coal"] -= FURNACE_COAL_COST
 			inventory["fuel"] = inventory.get("fuel", 0) + 1
 			building.state = BuildingState.WORKING
 		else:
@@ -191,11 +241,16 @@ func process_buildings(inventory: Dictionary, power_system: Node, pollution_syst
 
 	# Generators convert fuel to power
 	for building in get_buildings_by_type(BuildingType.GENERATOR):
-		if power_system != null and inventory.get("fuel", 0) >= 1:
-			inventory["fuel"] -= 1
-			power_system.add_power(25)
+		building.cycle_progress += delta
+		if building.cycle_progress < GENERATOR_CYCLE_TIME:
+			continue
+		building.cycle_progress = 0.0
+
+		if power_system != null and inventory.get("fuel", 0) >= GENERATOR_FUEL_COST:
+			inventory["fuel"] -= GENERATOR_FUEL_COST
+			power_system.add_power(GENERATOR_POWER_OUTPUT)
 			if pollution_system != null:
-				pollution_system.add_pollution(2.0)
+				pollution_system.add_pollution(GENERATOR_POLLUTION_OUTPUT)
 			building.state = BuildingState.WORKING
 		else:
 			building.state = BuildingState.STARVING
@@ -207,10 +262,9 @@ func process_buildings(inventory: Dictionary, power_system: Node, pollution_syst
 
 func collect_nearby_resources(position: Vector2, resources_root: Node2D) -> Dictionary:
 	var collected: Dictionary = {}
-	var collect_range: float = 100.0
 
 	for resource_node in resources_root.get_children():
-		if position.distance_to(resource_node.position) < collect_range:
+		if position.distance_to(resource_node.position) < MINER_COLLECT_RANGE:
 			if resource_node.has_method("get_type") and resource_node.has_method("get_amount"):
 				var resource_type = resource_node.get_type()
 				var amount = resource_node.get_amount()

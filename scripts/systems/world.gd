@@ -43,18 +43,20 @@ func _ready() -> void:
 	# Create building manager
 	building_manager = Node2D.new()
 	building_manager.name = "BuildingManager"
-	var bm_script = preload("res://scripts/systems/building_manager.gd")
+	var bm_script: Script = preload("res://scripts/systems/building_manager.gd")
 	building_manager.set_script(bm_script)
 	add_child(building_manager)
 	
 	update_hud()
-	update()
+	_request_redraw()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
 		match event.keycode:
 			KEY_H:
 				toggle_help()
+			KEY_I:
+				toggle_inventory()
 			KEY_B:
 				attempt_build_rocket()
 			KEY_L:
@@ -96,16 +98,16 @@ func _input(event: InputEvent) -> void:
 					building_manager.select_building(building)
 					send_message(building_manager.get_selected_building_info())
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
 	if generator != null and generator.has_method("get_coal_amount") and generator.get_coal_amount() <= 0:
-		var coal_available := resource_inventory.get("coal", 0)
+		var coal_available: int = int(resource_inventory.get("coal", 0))
 		if coal_available > 0:
 			generator.add_coal(1)
 			resource_inventory["coal"] = max(coal_available - 1, 0)
 			update_hud()
 
 	if building_manager != null and building_manager.has_method("process_buildings"):
-		building_manager.process_buildings(resource_inventory, power_system, pollution_system, resources_root)
+		building_manager.process_buildings(delta, resource_inventory, power_system, pollution_system, resources_root)
 
 	update_hud()
 
@@ -116,8 +118,8 @@ func select_building_type(building_type: int) -> void:
 	
 	selected_building_type = building_type
 	placement_mode = true
-	var building_name = building_manager.get_building_name(building_type)
-	send_message("Placing %s. Click to place." % building_name)
+	var building_name: String = building_manager.get_building_name(building_type)
+	send_message("Placing %s. Click a tile, Escape cancels." % building_name)
 
 func attempt_place_building(building_type: int, grid_pos: Vector2) -> void:
 	if building_manager == null:
@@ -125,12 +127,15 @@ func attempt_place_building(building_type: int, grid_pos: Vector2) -> void:
 		return
 	
 	if not building_manager.can_place_building(building_type, grid_pos, resource_inventory):
-		send_message("Cannot place building there.")
+		if building_manager.has_method("get_place_failure_reason"):
+			send_message(building_manager.get_place_failure_reason(building_type, grid_pos, resource_inventory))
+		else:
+			send_message("Cannot place building there.")
 		return
 	
 	var building = building_manager.place_building(building_type, grid_pos, resource_inventory)
 	if building != null:
-		var building_name = building_manager.get_building_name(building_type)
+		var building_name: String = building_manager.get_building_name(building_type)
 		send_message("%s placed." % building_name)
 		placement_mode = false
 		selected_building_type = -1
@@ -246,13 +251,20 @@ func update_hud() -> void:
 		hud.set_message(last_message)
 	if hud.has_method("set_building_info") and building_manager != null:
 		hud.set_building_info(building_manager.get_selected_building_info())
+	if hud.has_method("set_build_menu") and building_manager != null:
+		hud.set_build_menu(building_manager.get_build_menu_text())
+	if player_node != null and player_node.has_method("get_debug_input_state") and hud.has_method("set_input_state"):
+		hud.set_input_state(player_node.get_debug_input_state())
+	if player_node != null and player_node.has_method("get_debug_velocity") and hud.has_method("set_velocity"):
+		hud.set_velocity(player_node.get_debug_velocity().length())
+
 
 func _draw() -> void:
 	for y in range(map_height):
 		for x in range(map_width):
-			var index := x + y * map_width
-			var tile_type := tiles[index]
-			var tile_color := TILE_COLORS[tile_type]
+			var index: int = x + y * map_width
+			var tile_type: int = int(tiles[index])
+			var tile_color: Color = TILE_COLORS[tile_type]
 			draw_rect(Rect2(x * tile_size, y * tile_size, tile_size, tile_size), tile_color, true)
 			if (x + y) % 2 == 0:
 				draw_rect(Rect2(x * tile_size, y * tile_size, tile_size, tile_size), Color(1, 1, 1, 0.04), false, 1.0)
@@ -261,10 +273,16 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_DRAW:
 		pass
 
+func _request_redraw() -> void:
+	call_deferred("queue_redraw")
+
 func get_current_objective() -> String:
 	if rocket_node == null:
 		return "Find rocket components."
-	var stage := rocket_node.stage if rocket_node.has_property("stage") else 0
+	var stage: int = 0
+	var rocket_stage = rocket_node.get("stage")
+	if rocket_stage != null:
+		stage = int(rocket_stage)
 	match stage:
 		0:
 			return "Collect rocket parts and fuel to build your first rocket."
@@ -275,13 +293,20 @@ func get_current_objective() -> String:
 		3:
 			return "Load escape fuel and break out of the solar system."
 		4:
-			return "Solar system escaped!" 
+			return "Solar system escaped!"
 		_:
 			return "Explore, collect resources, and prepare the rocket."
 
 func toggle_help() -> void:
 	show_help = not show_help
 	if show_help:
-		send_message("Controls: H help, B build, L launch, U upgrade, E escape. 1-4 place buildings.")
+		send_message("Controls: H help, I inventory, B build, L launch, U upgrade, E escape. 1-4 place buildings.")
 	else:
 		send_message("Help hidden. Keep collecting resources.")
+	if hud != null and hud.has_method("set_help_visible"):
+		hud.set_help_visible(show_help)
+
+func toggle_inventory() -> void:
+	if hud != null and hud.has_method("toggle_inventory"):
+		hud.toggle_inventory()
+		send_message("Inventory toggled.")
