@@ -10,6 +10,11 @@ extends CanvasLayer
 @onready var rocket_label: Label = $Panel/VBoxContainer/RocketLabel
 @onready var message_label: Label = $Panel/VBoxContainer/MessageLabel
 @onready var objective_label: Label = $Panel/VBoxContainer/ObjectiveLabel
+@onready var controls_label: Label = $Panel/VBoxContainer/ControlsLabel
+@onready var build_menu_label: Label = $Panel/VBoxContainer/BuildMenuLabel
+@onready var input_state_label: Label = $Panel/VBoxContainer/InputStateLabel
+@onready var velocity_label: Label = $Panel/VBoxContainer/VelocityLabel
+@onready var inventory_panel: Control = $Inventory
 
 var last_message: String = ""
 var last_building_info: String = ""
@@ -21,6 +26,8 @@ func _ready() -> void:
 	set_rocket_status("Rocket: not built")
 	set_objective("Gather rocket parts and fuel to build your first booster.")
 	set_message("Press H for controls and objective hints.")
+	set_build_menu("")
+	set_help_visible(false)
 
 func set_all_resources(resources: Dictionary) -> void:
 	coal_label.text = "Coal: %d" % resources.get("coal", 0)
@@ -28,6 +35,8 @@ func set_all_resources(resources: Dictionary) -> void:
 	copper_label.text = "Copper: %d" % resources.get("copper", 0)
 	fuel_label.text = "Fuel: %d" % resources.get("fuel", 0)
 	parts_label.text = "Parts: %d" % resources.get("rocket_parts", 0)
+	if inventory_panel != null and inventory_panel.has_method("set_resources"):
+		inventory_panel.set_resources(resources)
 
 func set_resource(resource_type: String, amount: int) -> void:
 	match resource_type:
@@ -52,6 +61,22 @@ func set_objective(text: String) -> void:
 func set_message(text: String) -> void:
 	last_message = text
 	message_label.text = text
+
+func set_help_visible(show: bool) -> void:
+	controls_label.visible = show
+	build_menu_label.visible = show
+
+func set_build_menu(text: String) -> void:
+	build_menu_label.text = text
+
+func toggle_inventory() -> void:
+	inventory_panel.visible = not inventory_panel.visible
+
+func set_input_state(text: String) -> void:
+	input_state_label.text = "Input: %s" % text
+
+func set_velocity(value: float) -> void:
+	velocity_label.text = "Speed: %d" % int(value)
 
 func set_building_info(info: String) -> void:
 	last_building_info = info

@@ -51,11 +51,9 @@ func _on_body_entered(body: Node) -> void:
 func _draw() -> void:
 	var fill = RESOURCE_COLORS.get(resource_type, Color(0.5, 0.5, 0.5))
 	draw_circle(Vector2.ZERO, radius, fill)
-	draw_circle(Vector2.ZERO, radius * 0.8, Color(1, 1, 1, 0.1))
+	draw_circle(Vector2.ZERO, radius * 0.72, Color(1, 1, 1, 0.16))
+	draw_circle(Vector2.ZERO, radius, Color(1, 1, 1, 0.4), 2)
 	# draw_string removed for compatibility; avoid font-related errors during redraw
 
 func _request_redraw() -> void:
-	if has_method("update"):
-		call_deferred("update")
-	elif has_method("queue_redraw"):
-		call_deferred("queue_redraw")
+	call_deferred("queue_redraw")
